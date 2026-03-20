@@ -1,1 +1,47 @@
-/* You can add global styles to this file, and also import other style files */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap');
+
+/* ═══════════════════════════════════════
+   CSS VARIABLES — Dark Theme
+═══════════════════════════════════════ */
+:root {
+  --blue: #00b8ee;
+  --blue-dim: rgba(0,180,238,0.12);
+  --blue-glow: rgba(0,180,238,0.28);
+  --orange: #e07800;
+  --orange-glow: rgba(220,120,0,0.38);
+  --green: #00cc6a;
+  --red: #e03344;
+  --panel: rgba(3,7,16,0.92);
+  --tile-bg: #060e1c;
+  --dark: #01030a;
+  --text: #bdd8f0;
+  --muted: #344e68;
+  --border: rgba(0,130,210,0.14);
+  --border-hi: rgba(0,180,238,0.42);
+}
+
+/* ═══════════════════════════════════════
+   RESET & BASE
+═══════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 100%; min-height: 100%;
+  background: var(--dark);
+  font-family: 'Rajdhani', sans-serif;
+  color: var(--text);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Remove default button styles */
+button { font-family: inherit; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0,130,210,0.25); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,180,238,0.4); }
+
+/* Selection */
+::selection { background: rgba(0,180,238,0.25); color: var(--text); }
