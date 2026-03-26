@@ -13,6 +13,7 @@ import { GameOverlaysComponent } from './game/components/game-overlays.component
 import { LobbyComponent }        from './shared/lobby.component';
 import { CanvasBackgroundService } from './game/services/canvas-background.service';
 import { GameRoomService }         from './game/services/game-room.service';
+import { environment } from '../environments/environment';
 
 @Component({
   selector: 'app-root',
@@ -116,16 +117,41 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.subs.add(this.room.connected$.subscribe(v => {
-      this.connected = v;
-      this.cdr.markForCheck();
-    }));
+  this.subs.add(this.room.connected$.subscribe(v => {
+    this.connected = v;
+    this.cdr.markForCheck();
+  }));
 
-    this.subs.add(this.room.connectionError$.subscribe(err => {
-      this.connectionError = err;
-      this.cdr.markForCheck();
-    }));
+  this.subs.add(this.room.connectionError$.subscribe(err => {
+    this.connectionError = err;
+    this.cdr.markForCheck();
+  }));
+
+  // ── Auto-reconnect if token already in storage ──
+  this.tryAutoReconnect();
+}
+
+private async tryAutoReconnect(): Promise<void> {
+  const token      = localStorage.getItem('lb_access_token');
+  const customerId = localStorage.getItem('lb_customer_id');
+  if (!token || !customerId) return;
+
+  try {
+    await this.room.join({
+      endpoint:   environment.wsEndpoint,
+      roomName:   environment.roomName,
+      customerId,
+      nickname:   customerId,   // fallback; room will use server-side display name
+      seatNo:     1,
+      seatToken:  token,
+    });
+  } catch {
+    // Token expired or invalid — clear it, let lobby show
+    localStorage.removeItem('lb_access_token');
+    localStorage.removeItem('lb_refresh_token');
+    localStorage.removeItem('lb_customer_id');
   }
+}
 
   ngAfterViewInit(): void {
     this.bg.init(this.canvasRef.nativeElement);

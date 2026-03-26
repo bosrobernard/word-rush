@@ -15,7 +15,7 @@ import { slideDown } from '../animations/game.animations';
 <header class="hdr" @slideDown>
   <!-- Row 1: Brand + Timer HUD -->
   <div class="hdr-row1">
-    <div class="brand">LEXBLITZ</div>
+    <div class="brand">Scramble</div>
 
     <div class="hud-center">
       <div class="hchip" [class.pulse]="roundChanged">

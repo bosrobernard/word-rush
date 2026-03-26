@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Snake Online – Connection Required</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-dark:      #08101a;
+      --panel-blue:   #1a4a8a;
+      --panel-mid:    #1e5299;
+      --panel-light:  #2468c0;
+      --border-bright:#4a9eff;
+      --glow-center:  rgba(90,160,255,0.18);
+      --btn-green:    #3ecc42;
+      --btn-green-hi: #5de862;
+      --btn-green-sh: #1a7a1c;
+      --btn-red:      #d63030;
+      --btn-red-hi:   #f04040;
+      --btn-red-sh:   #7a1010;
+      --text-white:   #e8f4ff;
+      --text-dim:     #a0c8f0;
+    }
+
+    body {
+      background: var(--bg-dark);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Nunito', sans-serif;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* ── Starfield background ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 60% 40% at 50% 35%, rgba(30,82,153,0.30) 0%, transparent 70%),
+        radial-gradient(ellipse 80% 80% at 50% 50%, rgba(8,20,40,1) 0%, var(--bg-dark) 100%);
+      z-index: 0;
+    }
+
+    /* Tiny dot stars */
+    .stars {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+    .star {
+      position: absolute;
+      border-radius: 50%;
+      background: #fff;
+      opacity: 0;
+      animation: twinkle var(--dur, 3s) var(--del, 0s) infinite ease-in-out;
+    }
+    @keyframes twinkle {
+      0%, 100% { opacity: 0; }
+      50%       { opacity: var(--op, 0.6); }
+    }
+
+    /* ── Navbar ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 40px;
+      z-index: 10;
+      background: rgba(8,16,26,0.7);
+      backdrop-filter: blur(6px);
+      border-bottom: 1px solid rgba(74,158,255,0.12);
+    }
+
+    .logo {
+      font-family: 'Fredoka One', cursive;
+      font-size: 2rem;
+      line-height: 1;
+      letter-spacing: 1px;
+      user-select: none;
+    }
+    .logo .snake { color: #f5c842; text-shadow: 0 0 12px #f0a800, 2px 2px 0 #a06000; }
+    .logo .online { color: #f56a1a; text-shadow: 0 0 12px #e04800, 2px 2px 0 #803000; display: block; font-size: 1.25rem; margin-top: -4px; }
+
+    .nav-links {
+      display: flex;
+      gap: 32px;
+      list-style: none;
+    }
+    .nav-links a {
+      color: var(--text-dim);
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 0.95rem;
+      letter-spacing: 0.3px;
+      transition: color .2s;
+    }
+    .nav-links a:hover { color: #fff; }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .btn-presale {
+      background: transparent;
+      border: 2px solid #3ecc42;
+      color: #3ecc42;
+      padding: 7px 20px;
+      border-radius: 6px;
+      font-family: 'Nunito', sans-serif;
+      font-weight: 800;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: background .2s, color .2s;
+    }
+    .btn-presale:hover { background: #3ecc42; color: #fff; }
+
+    .lang {
+      color: var(--text-dim);
+      font-weight: 700;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+
+    /* ── Close & Expand icons ── */
+    .icon-close, .icon-expand {
+      position: fixed;
+      width: 32px; height: 32px;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 5px;
+      color: #aac;
+      cursor: pointer;
+      font-size: 1rem;
+      z-index: 20;
+      transition: background .2s;
+    }
+    .icon-close:hover, .icon-expand:hover { background: rgba(255,255,255,0.15); }
+    .icon-close  { top: 80px; left: 24px; }
+    .icon-expand { top: 80px; right: 24px; }
+
+    /* ── Game area (dark surround) ── */
+    .game-wrapper {
+      position: relative;
+      z-index: 5;
+      width: min(880px, 95vw);
+      height: min(500px, 70vh);
+      background: rgba(0,0,0,0.55);
+      border: 1px solid rgba(74,158,255,0.10);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 70px;
+    }
+
+    /* Soft radial glow behind dialog */
+    .game-wrapper::before {
+      content: '';
+      position: absolute;
+      width: 340px; height: 200px;
+      background: radial-gradient(ellipse, rgba(60,130,255,0.22) 0%, transparent 70%);
+      top: 50%; left: 50%;
+      transform: translate(-50%, -60%);
+      pointer-events: none;
+    }
+
+    /* ── Dialog box ── */
+    .dialog {
+      position: relative;
+      width: 420px;
+      background: linear-gradient(170deg, var(--panel-light) 0%, var(--panel-blue) 60%, #122d6a 100%);
+      border: 2px solid rgba(100,170,255,0.35);
+      border-radius: 10px;
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.06),
+        0 8px 40px rgba(0,0,0,0.7),
+        inset 0 1px 0 rgba(255,255,255,0.12);
+      overflow: hidden;
+      animation: popIn .35s cubic-bezier(.34,1.56,.64,1) both;
+    }
+    @keyframes popIn {
+      from { transform: scale(.88); opacity: 0; }
+      to   { transform: scale(1);   opacity: 1; }
+    }
+
+    /* Inner glow radial */
+    .dialog::before {
+      content: '';
+      position: absolute;
+      width: 260px; height: 120px;
+      background: radial-gradient(ellipse, rgba(120,190,255,0.18) 0%, transparent 70%);
+      top: 30px; left: 50%;
+      transform: translateX(-50%);
+      pointer-events: none;
+    }
+
+    .dialog-body {
+      padding: 36px 40px 32px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .dialog-title {
+      font-family: 'Fredoka One', cursive;
+      font-size: 1.75rem;
+      color: var(--text-white);
+      text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+      letter-spacing: 0.5px;
+    }
+
+    .dialog-msg {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-white);
+      text-align: center;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+      line-height: 1.5;
+    }
+
+    /* ── Buttons ── */
+    .dialog-actions {
+      display: flex;
+      gap: 16px;
+      width: 100%;
+      padding: 0 4px;
+    }
+
+    .btn-game {
+      flex: 1;
+      padding: 14px 10px;
+      border: none;
+      border-radius: 8px;
+      font-family: 'Fredoka One', cursive;
+      font-size: 1.2rem;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      position: relative;
+      transition: transform .12s, filter .15s;
+      outline: none;
+    }
+    .btn-game:active { transform: translateY(3px) scale(.98); filter: brightness(.85); }
+    .btn-game:hover  { filter: brightness(1.12); }
+
+    /* Green Retry */
+    .btn-retry {
+      color: #fff;
+      background: linear-gradient(180deg, var(--btn-green-hi) 0%, var(--btn-green) 50%, var(--btn-green-sh) 100%);
+      box-shadow:
+        0 4px 0 #0f4f10,
+        0 6px 16px rgba(62,204,66,0.35),
+        inset 0 1px 0 rgba(255,255,255,0.25);
+      text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    /* Red Exit */
+    .btn-exit {
+      color: #fff;
+      background: linear-gradient(180deg, var(--btn-red-hi) 0%, var(--btn-red) 50%, var(--btn-red-sh) 100%);
+      box-shadow:
+        0 4px 0 #5a0808,
+        0 6px 16px rgba(214,48,48,0.35),
+        inset 0 1px 0 rgba(255,255,255,0.20);
+      text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    /* ── Bottom bar ── */
+    .bottom-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 28px;
+      z-index: 10;
+      color: rgba(180,210,255,0.45);
+      font-size: 0.78rem;
+      font-weight: 600;
+      background: rgba(8,16,26,0.5);
+    }
+    .bottom-bar .smiley { color: rgba(255,220,100,0.5); }
+    .bottom-bar .version { letter-spacing: 0.5px; }
+
+    /* ── Gold square (bottom-left decoration) ── */
+    .deco-square {
+      width: 44px; height: 28px;
+      background: linear-gradient(135deg, #c8a020, #8a6010);
+      border-radius: 3px;
+      opacity: 0.85;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Stars -->
+  <div class="stars" id="stars"></div>
+
+  <!-- Navbar -->
+  <nav>
+    <div class="logo">
+      <span class="snake">SNAKE</span>
+      <span class="online">ONLINE</span>
+    </div>
+    <ul class="nav-links">
+      <li><a href="#">Game</a></li>
+      <li><a href="#">Leaderboard</a></li>
+      <li><a href="#">Forum</a></li>
+      <li><a href="#">Explore MXR</a></li>
+      <li><a href="#">Airdrop</a></li>
+      <li><a href="#">Download</a></li>
+    </ul>
+    <div class="nav-right">
+      <button class="btn-presale">Join Presale</button>
+      <span class="lang">🇬🇧 English</span>
+    </div>
+  </nav>
+
+  <!-- Close / Expand -->
+  <div class="icon-close">✕</div>
+  <div class="icon-expand">⤢</div>
+
+  <!-- Game viewport -->
+  <div class="game-wrapper">
+    <div class="dialog">
+      <div class="dialog-body">
+        <h2 class="dialog-title">Connection Required</h2>
+        <p class="dialog-msg">Please connect to the internet to continue.</p>
+        <div class="dialog-actions">
+          <button class="btn-game btn-retry">Retry</button>
+          <button class="btn-game btn-exit">Exit</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom bar -->
+  <div class="bottom-bar">
+    <div class="deco-square"></div>
+    <span>La nereyesun<span class="smiley">:D</span></span>
+    <span class="version">v–1.14</span>
+  </div>
+
+  <script>
+    // Generate twinkling stars
+    const container = document.getElementById('stars');
+    for (let i = 0; i < 120; i++) {
+      const s = document.createElement('div');
+      s.className = 'star';
+      const size = Math.random() * 2 + 0.5;
+      s.style.cssText = `
+        width:${size}px; height:${size}px;
+        top:${Math.random()*100}%;
+        left:${Math.random()*100}%;
+        --dur:${(Math.random()*4+2).toFixed(1)}s;
+        --del:${(Math.random()*5).toFixed(1)}s;
+        --op:${(Math.random()*0.5+0.2).toFixed(2)};
+      `;
+      container.appendChild(s);
+    }
+  </script>
+</body>
+</html>
