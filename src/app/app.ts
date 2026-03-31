@@ -133,7 +133,8 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
 
 private async tryAutoReconnect(): Promise<void> {
   const token      = localStorage.getItem('lb_access_token');
-  const customerId = localStorage.getItem('lb_customer_id');
+  const customerId = localStorage.getItem('lb_customer_id'); // now consistent
+  const nickname   = localStorage.getItem('lb_nickname') ?? customerId ?? '';
   if (!token || !customerId) return;
 
   try {
@@ -141,15 +142,16 @@ private async tryAutoReconnect(): Promise<void> {
       endpoint:   environment.wsEndpoint,
       roomName:   environment.roomName,
       customerId,
-      nickname:   customerId,   // fallback; room will use server-side display name
+      nickname,   // ← was falling back to customerId as display name
       seatNo:     1,
       seatToken:  token,
     });
   } catch {
-    // Token expired or invalid — clear it, let lobby show
     localStorage.removeItem('lb_access_token');
     localStorage.removeItem('lb_refresh_token');
     localStorage.removeItem('lb_customer_id');
+    localStorage.removeItem('lb_user_id');
+    localStorage.removeItem('lb_nickname');
   }
 }
 

@@ -18,6 +18,7 @@ import {
   countdownPop,
   fadeUp,
 } from '../animations/game.animations';
+import { GameRoomService } from '../services/game-room.service';
 
 @Component({
   selector: 'app-game-overlays',
@@ -477,6 +478,7 @@ export class GameOverlaysComponent implements OnInit, OnDestroy {
   buzzBannerText = '';
   private cdInterval?: ReturnType<typeof setInterval>;
   private subs = new Subscription();
+  private buzzBannerTimeout?: ReturnType<typeof setTimeout>;
 
   get cdColor() {
     const n = parseInt(this.countdownDisplay, 10);
@@ -486,6 +488,7 @@ export class GameOverlaysComponent implements OnInit, OnDestroy {
 
   constructor(
     private state: GameStateService,
+    private room: GameRoomService,
     private cdr: ChangeDetectorRef,
   ) {}
 
@@ -555,15 +558,16 @@ export class GameOverlaysComponent implements OnInit, OnDestroy {
     );
 
     this.subs.add(
-      this.state.roundWinner$.subscribe((w) => {
-        if (w) {
-          this.buzzBannerText = `⚡ ${w} got it!`;
+      this.room.buzzedNickname$.subscribe((nickname) => {
+        if (nickname) {
+          clearTimeout(this.buzzBannerTimeout); // ← cancel any pending hide
+          this.buzzBannerText = `⚡ ${nickname} buzzed in!`;
           this.buzzBanner = true;
           this.cdr.markForCheck();
-          setTimeout(() => {
+          this.buzzBannerTimeout = setTimeout(() => {
             this.buzzBanner = false;
             this.cdr.markForCheck();
-          }, 2500);
+          }, 2000);
         }
       }),
     );
@@ -623,11 +627,11 @@ export class GameOverlaysComponent implements OnInit, OnDestroy {
     }, 1000);
   }
 
-  dismissMatchEnd() {
+  async dismissMatchEnd(): Promise<void> {
     this.showMatchEnd = false;
-    // The host application should handle navigation back to lobby / matchmaking.
-    // Emit leave so the app component can show the lobby screen again.
     this.cdr.markForCheck();
+    await this.room.leave();
+    // room.connected$ flips to false → app.component shows lobby automatically
   }
 
   reactionX(id: string) {

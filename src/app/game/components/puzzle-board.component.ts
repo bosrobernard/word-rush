@@ -635,6 +635,9 @@ export class PuzzleBoardComponent implements OnInit, OnDestroy {
 
   @HostListener('document:keydown', ['$event'])
   onKey(e: KeyboardEvent) {
+    const activePhases = ['round_active', 'buzz_window', 'answering'];
+    if (!activePhases.includes(this.phase)) return; // ← guard
+
     if (e.key === 'Enter') {
       this.onSubmit();
       return;

@@ -200,3 +200,6 @@ export class CanvasBackgroundService {
     this.raf = requestAnimationFrame(() => this.loop());
   }
 }
+
+
+

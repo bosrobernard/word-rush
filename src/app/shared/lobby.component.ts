@@ -929,9 +929,6 @@ export class LobbyComponent implements OnInit {
     const user = res?.data?.user ?? res?.data ?? res;
     const tokens = res?.data?.tokens ?? {};
 
-    console.log('tokens object:', tokens); // ← add this
-    console.log('accessToken:', tokens?.accessToken); // ← and this
-
     this.accessToken =
       tokens?.accessToken ?? tokens?.token ?? tokens?.jwt ?? '';
     this.nickname = user?.displayName ?? user?.username ?? '';
@@ -942,6 +939,7 @@ export class LobbyComponent implements OnInit {
     localStorage.setItem('lb_access_token', this.accessToken);
     localStorage.setItem('lb_refresh_token', refreshToken);
     localStorage.setItem('lb_user_id', String(userId));
+    localStorage.setItem('lb_customer_id', String(userId)); // ← add this, fixes auto-reconnect + ScrambleAuthService
     localStorage.setItem('lb_nickname', this.nickname);
 
     this.matchForm.nickname = this.nickname;
@@ -979,8 +977,12 @@ export class LobbyComponent implements OnInit {
       if (this.availableGames.length > 0 && !this.matchForm.gameKey) {
         this.selectGame(this.availableGames[0]);
       }
-    } catch {
+    } catch (err: any) {
       this.availableGames = [];
+      this.error =
+        this.parseApiError(err) ||
+        'Could not load available games. Please try again.';
+      this.cdr.markForCheck();
     } finally {
       this.loadingGames = false;
       this.cdr.markForCheck();
@@ -1039,8 +1041,15 @@ export class LobbyComponent implements OnInit {
 
       const seatToken = data?.seatToken ?? data?.token ?? token;
       const seatNo = data?.seatNo ?? data?.seat ?? 1;
+
+      console.log('Join response fields:', Object.keys(data));
       const roomName =
-        data?.roomName ?? data?.gameKey ?? data?.code ?? environment.roomName;
+        data?.colyseusRoom ??
+        data?.roomName ??
+        data?.gameKey ??
+        data?.roomType ??
+        environment.roomName;
+
       const customerId =
         data?.customerId ??
         data?.userId ??
