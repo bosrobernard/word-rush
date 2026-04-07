@@ -21,7 +21,7 @@ const WORD_RUSH_GAME = {
   gameKey: 'WORD_RUSH',
   name: 'Fastest Finger Word Guess',
   slug: 'fastest-finger-word-guess',
-  minEntryAmount: 100,
+  minEntryAmount: 0, // ← was 100
   currency: 'DORX',
   minPlayers: 5,
   maxPlayers: 10,
@@ -211,25 +211,29 @@ const WORD_RUSH_GAME = {
               />
             </div>
 
-            <!-- Players selector only -->
+            <!-- Players selector — driven by game constants -->
             <div class="field">
               <label>Players per Match</label>
               <div class="seg-control">
                 <button
                   class="seg-btn"
-                  [class.active]="matchForm.expectedPlayers === 5"
-                  (click)="matchForm.expectedPlayers = 5"
+                  [class.active]="
+                    matchForm.expectedPlayers === wordRushGame.minPlayers
+                  "
+                  (click)="matchForm.expectedPlayers = wordRushGame.minPlayers"
                   [disabled]="loading"
                 >
-                  5
+                  {{ wordRushGame.minPlayers }}
                 </button>
                 <button
                   class="seg-btn"
-                  [class.active]="matchForm.expectedPlayers === 10"
-                  (click)="matchForm.expectedPlayers = 10"
+                  [class.active]="
+                    matchForm.expectedPlayers === wordRushGame.maxPlayers
+                  "
+                  (click)="matchForm.expectedPlayers = wordRushGame.maxPlayers"
                   [disabled]="loading"
                 >
-                  10
+                  {{ wordRushGame.maxPlayers }}
                 </button>
               </div>
             </div>
@@ -239,7 +243,7 @@ const WORD_RUSH_GAME = {
               (click)="onJoinMatch()"
               [disabled]="loading || !canJoinMatch"
             >
-              <span *ngIf="!loading">⚡ FIND MATCH</span>
+              <span *ngIf="!loading">⚡ JOIN</span>
               <span *ngIf="loading" class="connecting-text"
                 >FINDING MATCH…</span
               >
@@ -774,6 +778,8 @@ export class LobbyComponent implements OnInit {
   gameName = WORD_RUSH_GAME.name;
   private accessToken = '';
 
+  readonly wordRushGame = WORD_RUSH_GAME;
+
   loginForm = { login: '', password: '' };
   registerForm = {
     email: '',
@@ -784,7 +790,7 @@ export class LobbyComponent implements OnInit {
   };
   matchForm = {
     nickname: '',
-    expectedPlayers: 5 as 5 | 10,
+    expectedPlayers: WORD_RUSH_GAME.minPlayers as number, // ← was hardcoded 5
   };
 
   get canLogin(): boolean {
@@ -838,6 +844,13 @@ export class LobbyComponent implements OnInit {
           password: this.loginForm.password.trim(),
         })
         .toPromise();
+
+      // ← Check success flag before proceeding
+      if (!res?.success) {
+        this.error = res?.message || 'Login failed. Please try again.';
+        return;
+      }
+
       this.handleAuthResponse(res);
       this.step = 'match_setup';
     } catch (err: any) {
@@ -848,7 +861,6 @@ export class LobbyComponent implements OnInit {
     }
   }
 
-  // ── Register ──────────────────────────────────────────────────────────────
   async onRegister(): Promise<void> {
     if (!this.canRegister || this.loading) return;
     this.loading = true;
@@ -868,6 +880,13 @@ export class LobbyComponent implements OnInit {
       const res: any = await this.http
         .post(`${environment.apiBase}/auth/register`, payload)
         .toPromise();
+
+      // ← Check success flag before proceeding
+      if (!res?.success) {
+        this.error = res?.message || 'Registration failed. Please try again.';
+        return;
+      }
+
       this.handleAuthResponse(res);
       this.step = 'match_setup';
     } catch (err: any) {
@@ -922,13 +941,15 @@ export class LobbyComponent implements OnInit {
         'Content-Type': 'application/json',
       });
 
+      const uniqueGameKey = `${WORD_RUSH_GAME.gameKey}_${crypto.randomUUID()}`;
+
       const res: any = await this.http
         .post(
           `${environment.apiBase}/game-matches`,
           {
             nickname: this.matchForm.nickname.trim(),
-            gameKey: WORD_RUSH_GAME.gameKey, // always WORD_RUSH for now
-            entryAmount: WORD_RUSH_GAME.minEntryAmount,
+            gameKey: uniqueGameKey, // ← was WORD_RUSH_GAME.gameKey
+            entryAmount: WORD_RUSH_GAME.minEntryAmount, // ← now 0
             currency: WORD_RUSH_GAME.currency,
             expectedPlayers: this.matchForm.expectedPlayers,
           },
