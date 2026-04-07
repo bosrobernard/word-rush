@@ -196,6 +196,19 @@ export class GameStateService implements OnDestroy {
     );
   }
 
+  seedPreviewState(): void {
+    this.buildPuzzleFromWord('SCRAMBLE');
+    this.myScore$.next(0);
+    this.myStreak$.next(0);
+    this.mySolved$.next(0);
+    this.myAccuracy$.next(100);
+    this.currentRound$.next(1);
+    this.totalRounds$.next(10);
+    this.category$.next('Preview');
+    this.difficulty$.next('medium');
+    this.timerValue$.next(30);
+    this.timerMax$.next(30);
+  }
   // ── Puzzle construction ───────────────────────────────────────────────────
   buildPuzzleFromWord(scrambled: string): void {
     const letters = scrambled.toUpperCase().split('');
